@@ -24,3 +24,4 @@ optional arguments:
                         The example template for a CDS project
 ```                        
   
+For keeping the pipeline scripts up to date, please run the `repo_update.py` script before using the pipeline. This script will perform `git pull` on all repos within the `Scripts/` directory.
