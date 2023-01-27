@@ -1,9 +1,9 @@
 # CCDI_CDS_Pipeline
 This is a pipeline script that will run either or both CCDI and CDS scripts for validation and release.
 
-This script needs to be place at the top directory structure that contains all of the following scripts, found in the setup.sh script.
+This script needs to be place at the top directory structure that contains all of the following scripts, found in the setup_repo.py script.
 
-> Please run the setup.sh script first to ensure that all repos are present in the directory tree.
+> Please run the setup_repo.py script first to ensure that all repos are present in the directory tree.
 
 For information on how to run the CCDI_CDS_Pipeline.py please run `python CCDI_CDS_Pipeline.py -h`
 
