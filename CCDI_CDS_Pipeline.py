@@ -1,5 +1,6 @@
 import subprocess
 import argparse
+import argcomplete
 import os
 import re
 from datetime import date
@@ -18,6 +19,8 @@ parser.add_argument( '-f', '--filename', help='The input template file')
 parser.add_argument( '-p', '--pipeline', help="The pipeline that will be run, 'CCDI' (only), 'CDS' (only), 'Both'.")
 parser.add_argument( '-d', '--ccdi_template', help='The example template for a CCDI project')
 parser.add_argument( '-s', '--cds_template', help='The example template for a CDS project')
+
+argcomplete.autocomplete(parser)
 
 args = parser.parse_args()
 
