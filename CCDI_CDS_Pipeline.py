@@ -15,10 +15,11 @@ parser = argparse.ArgumentParser(
                     description='A script to run a pipeline for either a project that is CCDI only, CDS only or from CCDI to CDS.',
                     )
 
-parser.add_argument( '-f', '--filename', help='The input template file')
-parser.add_argument( '-p', '--pipeline', help="The pipeline that will be run, 'CCDI' (only), 'CDS' (only), 'Both'.")
+parser.add_argument( '-f', '--filename', help='The input template file', required=True)
+parser.add_argument( '-p', '--pipeline', help="The pipeline that will be run, 'CCDI' (only), 'CDS' (only), 'Both'.", required=True, choices=['CCDI','CDS','Both'])
 parser.add_argument( '-d', '--ccdi_template', help='The example template for a CCDI project')
 parser.add_argument( '-s', '--cds_template', help='The example template for a CDS project')
+parser.add_argument( '-b', '--bucket_list', help='The list file for a bucket that was created with Bucket_ls.py (part of the Validation script github repo)', default= "NO_LIST_PULL_FROM_S3")
 
 argcomplete.autocomplete(parser)
 
@@ -29,6 +30,7 @@ file_name=args.filename
 ccdi_template=args.ccdi_template
 cds_template=args.cds_template
 pipeline=args.pipeline.lower()
+bucket_list=args.bucket_list
 
 
 #Look down all directories to find the exact script path for the directory structure
@@ -100,6 +102,7 @@ if pipeline=="ccdi":
     #move input files to input directory
     subprocess.run([f'cp {file_name} {dir_0}'], shell=True)
     subprocess.run([f'cp {ccdi_template} {dir_0}'], shell=True)
+    subprocess.run([f'cp {bucket_list} {dir_0}'], shell=True)
 
     #create new path for input files
     file_name=dir_0+'/'+os.path.split(file_name)[1]
@@ -120,7 +123,7 @@ if pipeline=="ccdi":
     #create new path for input files
     file_name=dir_1+'/'+os.path.split(file_name)[1]
 
-    subprocess.run([f"Rscript --vanilla {CCDI_Submission_ValidatoR} -f {file_name} -t {ccdi_template}"], shell=True)
+    subprocess.run([f"Rscript --vanilla {CCDI_Submission_ValidatoR} -f {file_name} -t {ccdi_template} -b {bucket_list}"], shell=True)
 
     #move output to next directory
     extra_file_base=file_name
@@ -129,9 +132,12 @@ if pipeline=="ccdi":
 
 
     subprocess.run([f"Rscript --vanilla {CCDI_to_SRA} -f {file_name} -t {look_down_phsx}"], shell=True)
-    SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
-    SRA_folder=dir_1+"/"+SRA_folder
-    subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
+    #SRA can be skipped in certain data sets, so logic here will allow for its exclusion.
+    SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))
+    if len(SRA_folder)!=0:
+        SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
+        SRA_folder=dir_1+"/"+SRA_folder
+        subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CCDI_to_dbGaP} -f {file_name}"], shell=True)
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_1)))[0]
@@ -213,7 +219,7 @@ elif pipeline=="cds":
     #create new path for input files
     file_name=dir_1+'/'+os.path.split(file_name)[1]
 
-    subprocess.run([f"Rscript --vanilla {CDS_Submission_ValidationR} -f {file_name} -t {cds_template}"], shell=True)
+    subprocess.run([f"Rscript --vanilla {CDS_Submission_ValidationR} -f {file_name} -t {cds_template} -b {bucket_list}"], shell=True)
 
     #move output to next directory
     extra_file_base=file_name
@@ -221,10 +227,12 @@ elif pipeline=="cds":
     subprocess.run([f'mv {file_vaildate_text} {dir_2}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CDS_to_SRA} -f {file_name} -t {look_down_phsx}"], shell=True)
-    SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
-    SRA_folder=dir_1+"/"+SRA_folder
-    subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
-
+    #SRA can be skipped in certain data sets, so logic here will allow for its exclusion.
+    SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))
+    if len(SRA_folder)!=0:   
+        SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
+        SRA_folder=dir_1+"/"+SRA_folder
+        subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CDS_to_dbGaP} -f {file_name}"], shell=True)
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_1)))[0]
@@ -312,7 +320,7 @@ elif pipeline=="both":
     #create new path for input files
     file_name=dir_1+'/'+os.path.split(file_name)[1]
 
-    subprocess.run([f"Rscript --vanilla {CCDI_Submission_ValidatoR} -f {file_name} -t {ccdi_template}"], shell=True)
+    subprocess.run([f"Rscript --vanilla {CCDI_Submission_ValidatoR} -f {file_name} -t {ccdi_template} -b {bucket_list}"], shell=True)
 
     #move output to next directory
     extra_file_base=file_name
@@ -350,7 +358,7 @@ elif pipeline=="both":
     #create new path for input files
     file_name=dir_4+'/'+os.path.split(file_name)[1]
 
-    subprocess.run([f"Rscript --vanilla {CDS_Submission_ValidationR} -f {file_name} -t {cds_template}"], shell=True)
+    subprocess.run([f"Rscript --vanilla {CDS_Submission_ValidationR} -f {file_name} -t {cds_template} -b {bucket_list}"], shell=True)
 
     #move output to next directory
     extra_file_base=file_name
@@ -358,9 +366,12 @@ elif pipeline=="both":
     subprocess.run([f'mv {file_vaildate_text} {dir_5}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CDS_to_SRA} -f {file_name} -t {look_down_phsx}"], shell=True)
-    SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_4)))[0]
-    SRA_folder=dir_4+"/"+SRA_folder
-    subprocess.run([f'mv -f {SRA_folder} {dir_7}'], shell=True)
+    #SRA can be skipped in certain data sets, so logic here will allow for its exclusion.
+    SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_4)))
+    if len(SRA_folder)!=0:
+        SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_4)))[0]
+        SRA_folder=dir_4+"/"+SRA_folder
+        subprocess.run([f'mv -f {SRA_folder} {dir_7}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CDS_to_dbGaP} -f {file_name}"], shell=True)
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_4)))[0]
