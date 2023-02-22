@@ -31,10 +31,17 @@ ccdi_template=args.ccdi_template
 cds_template=args.cds_template
 pipeline=args.pipeline.lower()
 bucket_list=args.bucket_list
+file_ext=os.path.splitext(file_name)[1]
+working_file_path=os.path.split(os.path.relpath(file_name))[0]
+
+#Correct the file path if your within the working directory of the file.
+if working_file_path=='':
+    working_file_path="."
 
 
 #Look down all directories to find the exact script path for the directory structure
-look_down=glob.glob('*/**/**/**/**/**/**/**/*',recursive=True)
+script_path=os.path.split(os.path.realpath(__file__))[0]
+look_down=glob.glob(f'{script_path}/**/**/**/**/**/**/*',recursive=True)
 
 #remove all endpoints except for R scripts (this was also done to avoid picking up README.md files).
 look_down_R=[ldl for ldl in look_down if ldl.endswith('.R')]
@@ -83,7 +90,7 @@ if pipeline=="ccdi":
     today_dir=refresh_date()
 
     #create dir structure and move files accordingly
-    dir_base=f"{pipeline}_working_{today_dir}"
+    dir_base=f"{working_file_path}/{pipeline}_working_{today_dir}"
     dir_0=f"{dir_base}/0_input_files"
     dir_1=f"{dir_base}/1_CCDI_CatchERR"
     dir_2=f"{dir_base}/2_CCDI_Validator"
@@ -111,7 +118,7 @@ if pipeline=="ccdi":
     subprocess.run([f"Rscript --vanilla {CCDI_CatchERR} -f {file_name} -t {ccdi_template}"], shell=True)
     
     extra_file_base=file_name
-    file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}.xlsx'
+    file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}{file_ext}'
     file_catcherr_text=os.path.splitext(extra_file_base)[0]+f'_CatchERR{today}.txt'
 
     #move output files to next directory
@@ -178,7 +185,7 @@ elif pipeline=="cds":
     today_dir=refresh_date()
 
     #create dir structure and move files accordingly
-    dir_base=f"{pipeline}_working_{today_dir}"
+    dir_base=f"{working_file_path}/{pipeline}_working_{today_dir}"
     dir_0=f"{dir_base}/0_input_files"
     dir_1=f"{dir_base}/1_CDS_CatchERR"
     dir_2=f"{dir_base}/2_CDS_Validation"
@@ -205,7 +212,7 @@ elif pipeline=="cds":
     subprocess.run([f"Rscript --vanilla {CDS_CatchERR} -f {file_name} -t {cds_template}"], shell=True)
     
     extra_file_base=file_name
-    file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}.xlsx'
+    file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}{file_ext}'
     file_catcherr_text=os.path.splitext(extra_file_base)[0]+f'_CatchERR{today}.txt'
     file_index=os.path.splitext(extra_file_base)[0]+f'_index{today}.tsv'
 
@@ -264,8 +271,8 @@ elif pipeline=="cds":
 
 elif pipeline=="both":
     #if there is not a CCDI submission file and template file for both CCDI and CDS, kill the script.
-    if not file_name or not ccdi_template: 
-        print("Please include both a CCDI submission file and a CDDI template file.")
+    if not file_name or not ccdi_template or not cds_template: 
+        print("Please include a CCDI submission file and both a CDDI and CDS template file.")
         exit()
 
      #obtain the date
@@ -273,7 +280,7 @@ elif pipeline=="both":
     today_dir=refresh_date()
 
     #create dir structure and move files accordingly
-    dir_base=f"{pipeline}_working_{today_dir}"
+    dir_base=f"{working_file_path}/{pipeline}_working_{today_dir}"
     dir_0=f"{dir_base}/0_input_files"
     dir_1=f"{dir_base}/1_CCDI_CatchERR"
     dir_2=f"{dir_base}/2_CCDI_Validator"
@@ -308,7 +315,7 @@ elif pipeline=="both":
     subprocess.run([f"Rscript --vanilla {CCDI_CatchERR} -f {file_name} -t {ccdi_template}"], shell=True)
 
     extra_file_base=file_name
-    file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}.xlsx'
+    file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}{file_ext}'
     file_catcherr_text=os.path.splitext(extra_file_base)[0]+f'_CatchERR{today}.txt'
 
     #move output files to next directory
