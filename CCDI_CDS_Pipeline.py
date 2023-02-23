@@ -146,6 +146,9 @@ if pipeline=="ccdi":
         SRA_folder=dir_1+"/"+SRA_folder
         subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
 
+    file_sra_text=os.path.splitext(extra_file_base)[0]+f'_SRA{today}.txt'
+    subprocess.run([f'mv {file_sra_text} {dir_4}'], shell=True)
+
     subprocess.run([f"Rscript --vanilla {CCDI_to_dbGaP} -f {file_name}"], shell=True)
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_1)))[0]
     dbGaP_folder=dir_1+"/"+dbGaP_folder
@@ -240,6 +243,9 @@ elif pipeline=="cds":
         SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
         SRA_folder=dir_1+"/"+SRA_folder
         subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
+    
+    file_sra_text=os.path.splitext(extra_file_base)[0]+f'_SRA{today}.txt'
+    subprocess.run([f'mv {file_sra_text} {dir_4}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CDS_to_dbGaP} -f {file_name}"], shell=True)
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_1)))[0]
@@ -379,6 +385,9 @@ elif pipeline=="both":
         SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_4)))[0]
         SRA_folder=dir_4+"/"+SRA_folder
         subprocess.run([f'mv -f {SRA_folder} {dir_7}'], shell=True)
+
+    file_sra_text=os.path.splitext(extra_file_base)[0]+f'_SRA{today}.txt'
+    subprocess.run([f'mv {file_sra_text} {dir_7}'], shell=True)
 
     subprocess.run([f"Rscript --vanilla {CDS_to_dbGaP} -f {file_name}"], shell=True)
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_4)))[0]
