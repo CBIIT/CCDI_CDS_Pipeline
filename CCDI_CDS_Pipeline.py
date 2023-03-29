@@ -169,7 +169,8 @@ if pipeline=="ccdi":
     extra_file_base=file_name
     file_stat_text=os.path.splitext(extra_file_base)[0]+f'_Stats{today}.txt'
     subprocess.run([f'mv {file_stat_text} {dir_5}'], shell=True)
-
+    subprocess.run([f'mv *_stats.png {dir_5}'], shell=True)
+    
 
 ###############
 #
@@ -267,6 +268,7 @@ elif pipeline=="cds":
     extra_file_base=file_name
     file_stat_text=os.path.splitext(extra_file_base)[0]+f'_Stats{today}.txt'
     subprocess.run([f'mv {file_stat_text} {dir_5}'], shell=True)
+    subprocess.run([f'mv *_stats.png {dir_5}'], shell=True)
 
 
 ###############
@@ -409,6 +411,7 @@ elif pipeline=="both":
     extra_file_base=file_name
     file_stat_text=os.path.splitext(extra_file_base)[0]+f'_Stats{today}.txt'
     subprocess.run([f'mv {file_stat_text} {dir_8}'], shell=True)   
+    subprocess.run([f'mv *_stats.png {dir_8}'], shell=True)
 
 
 ###############
