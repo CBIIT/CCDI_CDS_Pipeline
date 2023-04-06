@@ -109,7 +109,8 @@ if pipeline=="ccdi":
     #move input files to input directory
     subprocess.run([f'cp {file_name} {dir_0}'], shell=True)
     subprocess.run([f'cp {ccdi_template} {dir_0}'], shell=True)
-    subprocess.run([f'cp {bucket_list} {dir_0}'], shell=True)
+    if (bucket_list!="NO_LIST_PULL_FROM_S3"):
+        subprocess.run([f'cp {bucket_list} {dir_0}'], shell=True)
 
     #create new path for input files
     file_name=dir_0+'/'+os.path.split(file_name)[1]
@@ -208,6 +209,8 @@ elif pipeline=="cds":
     #move input files to input directory
     subprocess.run([f'cp {file_name} {dir_0}'], shell=True)
     subprocess.run([f'cp {cds_template} {dir_0}'], shell=True)
+    if (bucket_list!="NO_LIST_PULL_FROM_S3"):
+        subprocess.run([f'cp {bucket_list} {dir_0}'], shell=True)
 
     #create new path for input files
     file_name=dir_0+'/'+os.path.split(file_name)[1]
@@ -314,6 +317,8 @@ elif pipeline=="both":
     subprocess.run([f'cp {file_name} {dir_0}'], shell=True)
     subprocess.run([f'cp {ccdi_template} {dir_0}'], shell=True)
     subprocess.run([f'cp {cds_template} {dir_0}'], shell=True)
+    if (bucket_list!="NO_LIST_PULL_FROM_S3"):
+        subprocess.run([f'cp {bucket_list} {dir_0}'], shell=True)
 
     #create new path for input files
     file_name=dir_0+'/'+os.path.split(file_name)[1]
