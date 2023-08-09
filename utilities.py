@@ -9,46 +9,42 @@ def curator_copy_file(source:str, dest:str):
     except Exception as e:
          print('Error copying file: ',e)
 
-## This function moves directories from source to destination
+
 def curator_move_file(source:str, dest:str):
     if((source==None) or (dest==None)):
        print("Please specify source and destination l.")
        exit()
+
+          
+    source_path = os.path.abspath(source)
+    destination_path = os.path.abspath(dest)
+    
+    print('Source: ',source)
+    print('Source Path Abs: ', source_path)
+    print('Dest: ',dest)
+    print('Dest Path Abs: ', destination_path)            
     try:
-        source_abs=os.path.abspath(source)
-        dest_abs= os.path.abspath(dest)
-        print('Source Path: ', source)
-        print('Source Path Abs: ', source_abs)
-        # Commence Only if Source Path exists
-        if os.path.exists(source_abs):
-            print('Source exists : ',source_abs)
-            # Check if Destination Path exists
-            if os.path.exists(dest_abs):
-                 # Check if Destination Path is a directory
-                if os.path.isdir(dest_abs):
-                    # Get the filename from the relative path
-                    file_name=os.path.basename(source_abs)
-                    # Get the destination absolute path
-                    dest_file_path=os.path.join(dest_abs,file_name)
-                    print('The path is a directory ', dest_abs)
-                    print('Existing Path location: ', dest_file_path)
-                    # If the file exists remove it
-                    if os.path.isfile(dest_file_path):
-                        print('Removing Pre-existing file: ', dest_file_path)                        
-                        os.remove(dest_file_path) 
-                    else:
-                        # If the directory exists remove it
-                        print('Removing pre-existing Directory ', dest_file_path)
-                        shutil.rmtree(dest_file_path)    
-                else:
-                    print('The Path is a file: , dest_abs') 
-                    os.remove(dest_abs)   
+        if os.path.exists(destination_path):
+            if os.path.isdir(source_path):
+                # Remove destination directory if it exists
+                source_base_dir=os.path.abspath(source_path).split(os.path.sep)[-1]
+                        # ReCalculate the abspath of the destination directory
+                destination_path = os.path.join(destination_path,source_base_dir)
+                if os.path.isdir(destination_path):
+                    print('Removing pre-existing Directory ', destination_path)
+                    shutil.rmtree(destination_path)
+            else:
+                # Remove destination file if it exists
+                file_name=os.path.basename(source_path)
+                dest_file_path=os.path.join(destination_path,file_name)
+                if os.path.exists(dest_file_path):
+                    print('Removing pre-existing File ', dest_file_path)
+                    os.remove(dest_file_path)
 
-
-        shutil.move(source_abs,dest_abs)
-
+        shutil.move(source_path, destination_path)
+        print(f"Moved '{source_path}' to '{destination_path}'")
     except Exception as e:
-         print('Error moving file: ',e)
+        print('Error moving file: ',e)  
 
 ## This function executes an R script that is provided and catches an error
 def curator_execute_rscript(cmd):

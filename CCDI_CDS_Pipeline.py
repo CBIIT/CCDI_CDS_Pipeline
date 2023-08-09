@@ -94,15 +94,15 @@ if pipeline=="ccdi":
     today=refresh_date()
     today_dir=refresh_date()
 
-    #create dir structure and move files accordingly
-    dir_base=f"{working_file_path}/{pipeline}_working_{today_dir}"
-    dir_0=f"{dir_base}/0_input_files"
-    dir_1=f"{dir_base}/1_CCDI_CatchERR"
-    dir_2=f"{dir_base}/2_CCDI_Validator"
-    dir_3=f"{dir_base}/3_CCDI_to_dbGaP"
-    dir_4=f"{dir_base}/4_CCDI_to_SRA"
-    dir_5=f"{dir_base}/5_CCDI_Stats"
 
+    concat_str = ''.join([pipeline,"_working_",today_dir])
+    dir_base= os.path.join(working_file_path,concat_str)
+    dir_0= os.path.join(dir_base,"0_input_files")
+    dir_1= os.path.join(dir_base,"1_CCDI_CatchERR")
+    dir_2= os.path.join(dir_base,"2_CCDI_Validator")
+    dir_3= os.path.join(dir_base,"3_CCDI_to_dbGaP")
+    dir_4= os.path.join(dir_base,"4_CCDI_to_SRA")
+    dir_5= os.path.join(dir_base,"5_CCDI_Stats")
     dir_list= [dir_0,dir_1,dir_2,dir_3,dir_4,dir_5]
 
     dir_access =  0o755
@@ -126,8 +126,11 @@ if pipeline=="ccdi":
         
 
     #create new path for input files
-    file_name=dir_0+'/'+os.path.split(file_name)[1]
-    ccdi_template=dir_0+'/'+os.path.split(ccdi_template)[1]
+    file_name=os.path.join(dir_0,os.path.split(file_name)[1])
+    ccdi_template=os.path.join(dir_0,os.path.split(ccdi_template)[1])   
+
+    #file_name=dir_0+'/'+os.path.split(file_name)[1]
+    #ccdi_template=dir_0+'/'+os.path.split(ccdi_template)[1]
     
 
     file_name_abs= (os.path.abspath(file_name))
@@ -153,17 +156,18 @@ if pipeline=="ccdi":
     curator_move_file(file_catcherr_text,dir_1)
 
 
-    # #create new path for input files
-    file_name=dir_1+'/'+os.path.split(file_name)[1]
+    # # # #create new path for input files
+    # # file_name=dir_1+'/'+os.path.split(file_name)[1]
+    # file_name_abs= (os.path.abspath(file_name))
+    file_name=os.path.join(dir_1,os.path.split(file_name)[1])
     file_name_abs= (os.path.abspath(file_name))
-
-    
+    print(file_name_abs)
     cmd = ["Rscript", CCDI_Submission_ValidatoR, "-f", str(file_name_abs), "-t", str(ccdi_template_abs),"-b", str(bucket_list)]
    
     curator_execute_rscript(cmd)
 
 
-    # #move output to next directory
+    #move output to next directory
     extra_file_base=file_name
     file_vaildate_text=os.path.splitext(extra_file_base)[0]+f'_Validate{today}.txt'
     curator_move_file(file_vaildate_text,dir_2)
@@ -171,12 +175,12 @@ if pipeline=="ccdi":
     cmd = ["Rscript", CCDI_to_SRA, "-f", str(file_name_abs), "-t", look_down_phsx] 
     curator_execute_rscript(cmd)    
     
-    # #SRA can be skipped in certain data sets, so logic here will allow for its exclusion.
+    #SRA can be skipped in certain data sets, so logic here will allow for its exclusion.
     SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))
     
     if len(SRA_folder)!=0:
         SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
-        SRA_folder=dir_1+"/"+SRA_folder
+        SRA_folder=os.path.join(dir_1,SRA_folder)
         curator_move_file(SRA_folder,dir_4)
 
 
@@ -188,17 +192,19 @@ if pipeline=="ccdi":
     curator_execute_rscript(cmd)
    
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_1)))[0]
-    dbGaP_folder=dir_1+"/"+dbGaP_folder
+    # dbGaP_folder=dir_1+"/"+dbGaP_folder
+    dbGaP_folder=os.path.join(dir_1,dbGaP_folder)
     curator_move_file(dbGaP_folder,dir_3) 
 
     #Pull out files from dbGaP submission for stats generation
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_3)))[0]
-    dbgap_dir= dir_3+"/"+dbGaP_folder+"/"
+    # dbgap_dir= dir_3+"/"+dbGaP_folder+"/"
+    dbgap_dir=os.path.join(dir_3,dbGaP_folder)
     dbgap_dir_list=os.listdir(os.path.abspath(dbgap_dir))
     SA_DS= [x for x in dbgap_dir_list if re.match(r'SA_DS.*', x)][0]
     SC_DS= [x for x in dbgap_dir_list if re.match(r'SC_DS.*', x)][0]
-    SC_DS= dbgap_dir + SC_DS
-    SA_DS= dbgap_dir + SA_DS
+    SC_DS= os.path.join(dbgap_dir,SC_DS)
+    SA_DS= os.path.join(dbgap_dir,SA_DS)
 
     cmd = ["Rscript", CCDI_Stat_GeneratoR, "-f", str(file_name_abs), "-c", SC_DS, "-a", SC_DS] 
     curator_execute_rscript(cmd)
