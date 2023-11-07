@@ -85,7 +85,7 @@ if pipeline=="ccdi":
         print("Please include both a CCDI submission file and a CDDI template file.")
         exit()
 
-     #obtain the date
+    #obtain the date
     today=refresh_date()
     today_dir=refresh_date()
 
@@ -286,7 +286,7 @@ elif pipeline=="both":
         print("Please include a CCDI submission file and both a CDDI and CDS template file.")
         exit()
 
-     #obtain the date
+    #obtain the date
     today=refresh_date()
     today_dir=refresh_date()
 
