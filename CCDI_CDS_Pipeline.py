@@ -5,11 +5,16 @@ import os
 import re
 from datetime import date
 import glob
-
+import shutil
+from utilities import *
 #TO DO
 # Add in further validation to include gaptools validation checks once gaptools is installed in the VM.
 #
 
+
+
+########################## Main Activity Starts Here ##########                     
+    
 parser = argparse.ArgumentParser(
                     prog='CCDI_CDS_Pipeline.py',
                     description='A script to run a pipeline for either a project that is CCDI only, CDS only or from CCDI to CDS.',
@@ -89,89 +94,127 @@ if pipeline=="ccdi":
     today=refresh_date()
     today_dir=refresh_date()
 
-    #create dir structure and move files accordingly
-    dir_base=f"{working_file_path}/{pipeline}_working_{today_dir}"
-    dir_0=f"{dir_base}/0_input_files"
-    dir_1=f"{dir_base}/1_CCDI_CatchERR"
-    dir_2=f"{dir_base}/2_CCDI_Validator"
-    dir_3=f"{dir_base}/3_CCDI_to_dbGaP"
-    dir_4=f"{dir_base}/4_CCDI_to_SRA"
-    dir_5=f"{dir_base}/5_CCDI_Stats"
 
-    subprocess.run([f'mkdir {dir_base}'], shell=True)
-    subprocess.run([f'mkdir {dir_0}'], shell=True)
-    subprocess.run([f'mkdir {dir_1}'], shell=True)
-    subprocess.run([f'mkdir {dir_2}'], shell=True)
-    subprocess.run([f'mkdir {dir_3}'], shell=True)
-    subprocess.run([f'mkdir {dir_4}'], shell=True)
-    subprocess.run([f'mkdir {dir_5}'], shell=True)
+    concat_str = ''.join([pipeline,"_working_",today_dir])
+    dir_base= os.path.join(working_file_path,concat_str)
+    dir_0= os.path.join(dir_base,"0_input_files")
+    dir_1= os.path.join(dir_base,"1_CCDI_CatchERR")
+    dir_2= os.path.join(dir_base,"2_CCDI_Validator")
+    dir_3= os.path.join(dir_base,"3_CCDI_to_dbGaP")
+    dir_4= os.path.join(dir_base,"4_CCDI_to_SRA")
+    dir_5= os.path.join(dir_base,"5_CCDI_Stats")
+    dir_list= [dir_0,dir_1,dir_2,dir_3,dir_4,dir_5]
+
+    dir_access =  0o755
+    if not os.path.isdir(dir_base):
+       
+        os.makedirs(dir_base,mode =dir_access)
+        os.chmod(dir_base, dir_access)
+
+    for item in dir_list:
+        if not os.path.isdir(item):
+            os.mkdir(item,mode=dir_access)
+            os.chmod(item, dir_access)
+
 
     #move input files to input directory
-    subprocess.run([f'cp {file_name} {dir_0}'], shell=True)
-    subprocess.run([f'cp {ccdi_template} {dir_0}'], shell=True)
+    curator_copy_file(file_name, dir_0)
+    curator_copy_file(ccdi_template, dir_0)
+
     if (bucket_list!="NO_LIST_PULL_FROM_S3"):
-        subprocess.run([f'cp {bucket_list} {dir_0}'], shell=True)
+        curator_copy_file(bucket_list, dir_0)
+        
 
     #create new path for input files
-    file_name=dir_0+'/'+os.path.split(file_name)[1]
-    ccdi_template=dir_0+'/'+os.path.split(ccdi_template)[1]
+    file_name=os.path.join(dir_0,os.path.split(file_name)[1])
+    ccdi_template=os.path.join(dir_0,os.path.split(ccdi_template)[1])   
 
-    subprocess.run([f"Rscript --vanilla {CCDI_CatchERR} -f {file_name} -t {ccdi_template}"], shell=True)
+    #file_name=dir_0+'/'+os.path.split(file_name)[1]
+    #ccdi_template=dir_0+'/'+os.path.split(ccdi_template)[1]
     
+
+    file_name_abs= (os.path.abspath(file_name))
+    ccdi_template_abs = (os.path.abspath(ccdi_template))
+    CCDI_CatchERR_abs=repr(os.path.abspath(CCDI_CatchERR))
+
+    
+    raw_string_file_name_abs = r"{}".format(file_name_abs)
+    raw_string_ccdi_template_abs = r"{}".format(ccdi_template_abs)
+    raw_string_CCDI_CatchERR_abs = r"{}".format(CCDI_CatchERR_abs)
+
+    cmd = ["Rscript", CCDI_CatchERR, "-f", str(file_name_abs), "-t", str(ccdi_template_abs)] 
+   
+    curator_execute_rscript(cmd)
+
+   
+    
+
     extra_file_base=file_name
     file_name=os.path.splitext(file_name)[0]+f'_CatchERR{today}{file_ext}'
     file_catcherr_text=os.path.splitext(extra_file_base)[0]+f'_CatchERR{today}.txt'
+    curator_move_file(file_name,dir_1)
+    curator_move_file(file_catcherr_text,dir_1)
 
-    #move output files to next directory
-    subprocess.run([f'mv {file_name} {dir_1}'], shell=True)
-    subprocess.run([f'mv {file_catcherr_text} {dir_1}'], shell=True)
 
-    today=refresh_date()
+    # # # #create new path for input files
+    # # file_name=dir_1+'/'+os.path.split(file_name)[1]
+    # file_name_abs= (os.path.abspath(file_name))
+    file_name=os.path.join(dir_1,os.path.split(file_name)[1])
+    file_name_abs= (os.path.abspath(file_name))
+    print(file_name_abs)
+    cmd = ["Rscript", CCDI_Submission_ValidatoR, "-f", str(file_name_abs), "-t", str(ccdi_template_abs),"-b", str(bucket_list)]
+   
+    curator_execute_rscript(cmd)
 
-    #create new path for input files
-    file_name=dir_1+'/'+os.path.split(file_name)[1]
-
-    subprocess.run([f"Rscript --vanilla {CCDI_Submission_ValidatoR} -f {file_name} -t {ccdi_template} -b {bucket_list}"], shell=True)
 
     #move output to next directory
     extra_file_base=file_name
     file_vaildate_text=os.path.splitext(extra_file_base)[0]+f'_Validate{today}.txt'
-    subprocess.run([f'mv {file_vaildate_text} {dir_2}'], shell=True)
+    curator_move_file(file_vaildate_text,dir_2)
 
-
-    subprocess.run([f"Rscript --vanilla {CCDI_to_SRA} -f {file_name} -t {look_down_phsx}"], shell=True)
+    cmd = ["Rscript", CCDI_to_SRA, "-f", str(file_name_abs), "-t", look_down_phsx] 
+    curator_execute_rscript(cmd)    
+    
     #SRA can be skipped in certain data sets, so logic here will allow for its exclusion.
     SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))
+    
     if len(SRA_folder)!=0:
         SRA_folder=list(filter(lambda x: "SRA_submission" in x, os.listdir(dir_1)))[0]
-        SRA_folder=dir_1+"/"+SRA_folder
-        subprocess.run([f'mv -f {SRA_folder} {dir_4}'], shell=True)
+        SRA_folder=os.path.join(dir_1,SRA_folder)
+        curator_move_file(SRA_folder,dir_4)
+
 
     file_sra_text=os.path.splitext(extra_file_base)[0]+f'_SRA{today}.txt'
-    subprocess.run([f'mv {file_sra_text} {dir_4}'], shell=True)
 
-    subprocess.run([f"Rscript --vanilla {CCDI_to_dbGaP} -f {file_name}"], shell=True)
+    curator_move_file(file_sra_text,dir_4)           
+
+    cmd = ["Rscript", CCDI_to_dbGaP, "-f", str(file_name_abs)] 
+    curator_execute_rscript(cmd)
+   
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_1)))[0]
-    dbGaP_folder=dir_1+"/"+dbGaP_folder
-    subprocess.run([f'mv -f {dbGaP_folder} {dir_3}'], shell=True)
+    # dbGaP_folder=dir_1+"/"+dbGaP_folder
+    dbGaP_folder=os.path.join(dir_1,dbGaP_folder)
+    curator_move_file(dbGaP_folder,dir_3) 
 
     #Pull out files from dbGaP submission for stats generation
     dbGaP_folder=list(filter(lambda x: "dbGaP_submission" in x, os.listdir(dir_3)))[0]
-    dbgap_dir= dir_3+"/"+dbGaP_folder+"/"
+    # dbgap_dir= dir_3+"/"+dbGaP_folder+"/"
+    dbgap_dir=os.path.join(dir_3,dbGaP_folder)
     dbgap_dir_list=os.listdir(os.path.abspath(dbgap_dir))
     SA_DS= [x for x in dbgap_dir_list if re.match(r'SA_DS.*', x)][0]
     SC_DS= [x for x in dbgap_dir_list if re.match(r'SC_DS.*', x)][0]
-    SC_DS= dbgap_dir + SC_DS
-    SA_DS= dbgap_dir + SA_DS
-        
-    subprocess.run([f"Rscript --vanilla {CCDI_Stat_GeneratoR} -f {file_name} -c {SC_DS} -a {SA_DS}"], shell=True)
+    SC_DS= os.path.join(dbgap_dir,SC_DS)
+    SA_DS= os.path.join(dbgap_dir,SA_DS)
 
-    #move output to next directory
+    cmd = ["Rscript", CCDI_Stat_GeneratoR, "-f", str(file_name_abs), "-c", SC_DS, "-a", SC_DS] 
+    curator_execute_rscript(cmd)
+
     extra_file_base=file_name
     file_stat_text=os.path.splitext(extra_file_base)[0]+f'_Stats{today}.txt'
-    subprocess.run([f'mv {file_stat_text} {dir_5}'], shell=True)
-    subprocess.run([f'mv {dir_1}/*_stats.png {dir_5}/.'], shell=True)
-    
+    curator_move_file(file_stat_text,dir_5) 
+    copy_stats_png_files(os.path.abspath(dir_1),os.path.abspath(dir_5))
+    #curator_move_file(f'{dir_1}/*_stats.png',dir_5)  
+
 
 ###############
 #
